@@ -1,0 +1,36 @@
+import { Store, createStore, applyMiddleware } from 'redux';
+import { composeWithDevTools } from 'redux-devtools-extension';
+import { RootState, rootReducer } from 'app/reducers';
+import { logger, thunk } from 'app/middleware';
+
+export function configureStore(initialState?: RootState): Store<RootState> {
+  let middleware = applyMiddleware(thunk, logger);
+
+  if (process.env.NODE_ENV !== 'production') {
+    middleware = composeWithDevTools(middleware);
+  }
+
+  
+  const { persistReducer } = require('redux-persist');
+    const storage = require('redux-persist/lib/storage').default;
+
+    const persistConfig = {
+      key: 'root',
+      storage
+    };
+
+  const persisted = persistReducer(persistConfig, rootReducer as any);
+
+  const store = createStore(persisted, initialState as any, middleware);
+
+  if (module.hot) {
+    module.hot.accept('app/reducers', () => {
+      const nextReducer = require('app/reducers');
+      store.replaceReducer(nextReducer);
+    });
+  }
+
+  return store;
+}
+
+
